@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FoodItem, PriceLevel } from '../types';
-import { MapPin, Calendar, DollarSign, Star, Tag, ExternalLink, Quote, ThumbsUp } from 'lucide-react';
+import { FoodItem } from '../types';
+import { MapPin, Calendar, Tag, ExternalLink, Quote, ThumbsUp } from 'lucide-react';
 
 interface FoodCardProps {
   food: FoodItem;
@@ -15,21 +15,24 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, highlight = false, aiC
   // Update image path to use just the number: /images/101.jpg
   const imageSource = !imgError 
     ? `/images/${food.imageNo}.jpg` 
-    : `https://picsum.photos/seed/${food.id}/400/300`;
+    : `https://picsum.photos/seed/${food.id}/800/600`; // Updated fallback to 4:3 ratio
 
   return (
     <div className={`relative overflow-hidden bg-white rounded-2xl transition-all duration-500 ${highlight ? 'shadow-2xl ring-4 ring-orange-400 scale-105 transform' : 'shadow-md border border-gray-100'}`}>
-      <div className="relative h-48 w-full overflow-hidden group">
+      {/* 
+        Forced Aspect Ratio 4:3 
+        using inline style for strict enforcement 
+      */}
+      <div 
+        className="relative w-full overflow-hidden group bg-gray-100"
+        style={{ aspectRatio: '16 / 9' }}
+      >
         <img 
           src={imageSource}
           alt={food.name} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={() => setImgError(true)}
         />
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center shadow-sm">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
-          <span className="text-sm font-bold text-gray-800">{food.rating}</span>
-        </div>
         
         {food.originalUrl && (
           <a 
@@ -47,14 +50,11 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, highlight = false, aiC
 
       <div className="p-5">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-xl font-bold text-gray-900 leading-tight">{food.name}</h3>
-          <div className="flex text-orange-500">
-            {[...Array(4)].map((_, i) => (
-              <DollarSign 
-                key={i} 
-                className={`w-4 h-4 ${i < food.priceLevel ? 'fill-orange-500' : 'text-gray-300'}`} 
-              />
-            ))}
+          <h3 className="text-xl font-bold text-gray-900 leading-tight flex-1 mr-2">{food.name}</h3>
+          <div className="text-right">
+             {food.specificPrice && (
+                 <span className="text-lg font-bold text-orange-600">{food.specificPrice}</span>
+             )}
           </div>
         </div>
 
@@ -77,6 +77,10 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, highlight = false, aiC
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
+          {/* Always show Campus Location Tag first */}
+          <span className={`px-2 py-1 text-xs rounded-full flex items-center border ${food.campusLocation === '校内' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
+              {food.campusLocation}
+          </span>
           {food.tags.map(tag => (
             <span key={tag} className="px-2 py-1 bg-orange-50 text-orange-600 text-xs rounded-full flex items-center">
               <Tag className="w-3 h-3 mr-1" /> {tag}

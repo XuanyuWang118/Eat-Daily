@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FoodItem, PriceLevel, FilterState, CATEGORIES } from './types';
+import { FoodItem, PriceLevel, FilterState, CATEGORIES, LOCATIONS, CampusLocation } from './types';
 import { INITIAL_FOODS } from './constants';
 import { FoodCard } from './components/FoodCard';
 import { Button } from './components/Button';
 import { getFoodRecommendationComment } from './services/geminiService';
-import { Utensils, Settings, Plus, Trash2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Utensils, Settings, Plus, Trash2, ArrowLeft, RefreshCw, Check } from 'lucide-react';
 
 // Main App Component
 const App: React.FC = () => {
@@ -23,7 +23,7 @@ const App: React.FC = () => {
 
   // Filters State
   const [filters, setFilters] = useState<FilterState>({
-    maxPrice: PriceLevel.LUXURY,
+    locations: [], // Empty means "All"
     tags: [],
   });
 
@@ -35,7 +35,12 @@ const App: React.FC = () => {
   // Derived state: Filtered foods
   const filteredFoods = useMemo(() => {
     return foods.filter(food => {
-      if (food.priceLevel > filters.maxPrice) return false;
+      // Location Filter
+      if (filters.locations.length > 0) {
+        if (!filters.locations.includes(food.campusLocation)) return false;
+      }
+      
+      // Tag Filter
       if (filters.tags.length > 0) {
         // Must match at least one selected tag
         const hasTag = food.tags.some(t => filters.tags.includes(t));
@@ -82,6 +87,15 @@ const App: React.FC = () => {
     setIsAiLoading(false);
   };
 
+  const toggleLocationFilter = (loc: CampusLocation) => {
+    setFilters(prev => ({
+      ...prev,
+      locations: prev.locations.includes(loc)
+        ? prev.locations.filter(l => l !== loc)
+        : [...prev.locations, loc]
+    }));
+  };
+
   const toggleTagFilter = (tag: string) => {
     setFilters(prev => ({
       ...prev,
@@ -102,15 +116,16 @@ const App: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const location = formData.get('location') as string;
-    const priceLevel = Number(formData.get('priceLevel')) as PriceLevel;
     const category = formData.get('category') as string;
+    const campusLocation = formData.get('campusLocation') as CampusLocation;
     
     const newItem: FoodItem = {
       id: Date.now().toString(),
       imageNo: 0, // Default or generic image logic
       name,
       location,
-      priceLevel,
+      campusLocation,
+      priceLevel: 2, // Default
       tags: [category],
       rating: 4,
       postDate: new Date().toLocaleDateString()
@@ -171,47 +186,62 @@ const App: React.FC = () => {
           className="flex items-center justify-center"
         >
           <Settings className="w-4 h-4 mr-2" />
-          {showFilters ? "收起筛选" : "偏好设置"}
+          {showFilters ? "收起筛选" : `偏好设置 (${filters.locations.length + filters.tags.length})`}
         </Button>
       </div>
 
       {/* Filter Panel (Slide down) */}
       {showFilters && (
-        <div className="w-full bg-white mt-4 p-4 rounded-xl shadow-lg border border-gray-100 animate-fade-in-down">
-          <div className="mb-4">
-             <label className="text-xs font-bold text-gray-500 uppercase block mb-2">最高价位</label>
-             <input 
-               type="range" 
-               min="1" 
-               max="4" 
-               value={filters.maxPrice}
-               onChange={(e) => setFilters({...filters, maxPrice: Number(e.target.value) as PriceLevel})}
-               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
-             />
-             <div className="flex justify-between text-xs text-gray-400 mt-1">
-               <span>¥</span>
-               <span>¥¥</span>
-               <span>¥¥¥</span>
-               <span>¥¥¥¥</span>
+        <div className="w-full bg-white mt-4 p-5 rounded-xl shadow-lg border border-gray-100 animate-fade-in-down mb-10">
+          
+          <div className="mb-6">
+             <div className="flex justify-between items-center mb-3">
+                <label className="text-sm font-bold text-gray-800 uppercase">去哪里吃？</label>
+                <span className="text-xs text-gray-400">可多选</span>
+             </div>
+             <div className="flex gap-3">
+               {LOCATIONS.map(loc => {
+                 const isSelected = filters.locations.includes(loc);
+                 return (
+                   <button
+                     key={loc}
+                     onClick={() => toggleLocationFilter(loc)}
+                     className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center ${
+                       isSelected 
+                       ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                     }`}
+                   >
+                     {isSelected && <Check className="w-3 h-3 mr-1" />}
+                     {loc}
+                   </button>
+                 );
+               })}
              </div>
           </div>
 
-          <div className="mb-4">
-             <label className="text-xs font-bold text-gray-500 uppercase block mb-2">想吃什么类?</label>
+          <div>
+             <div className="flex justify-between items-center mb-3">
+                <label className="text-sm font-bold text-gray-800 uppercase">想吃什么类？</label>
+                <span className="text-xs text-gray-400">可多选</span>
+             </div>
              <div className="flex flex-wrap gap-2">
-               {CATEGORIES.map(cat => (
-                 <button
-                   key={cat}
-                   onClick={() => toggleTagFilter(cat)}
-                   className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                     filters.tags.includes(cat) 
-                     ? 'bg-orange-500 text-white' 
-                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                   }`}
-                 >
-                   {cat}
-                 </button>
-               ))}
+               {CATEGORIES.map(cat => {
+                 const isSelected = filters.tags.includes(cat);
+                 return (
+                   <button
+                     key={cat}
+                     onClick={() => toggleTagFilter(cat)}
+                     className={`px-3 py-1.5 rounded-full text-xs transition-all border ${
+                       isSelected 
+                       ? 'bg-orange-500 border-orange-500 text-white shadow-sm' 
+                       : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                     }`}
+                   >
+                     {cat}
+                   </button>
+                 );
+               })}
              </div>
           </div>
         </div>
@@ -262,23 +292,26 @@ const App: React.FC = () => {
            <label className="block text-sm font-medium text-gray-700 mb-1">位置/备注</label>
            <input required name="location" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" placeholder="例如：环球中心 3楼" />
          </div>
+         
+         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">位置类型</label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input type="radio" name="campusLocation" value="校内" className="mr-2 accent-orange-500" defaultChecked />
+                校内
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="campusLocation" value="校外" className="mr-2 accent-orange-500" />
+                校外
+              </label>
+            </div>
+         </div>
 
-         <div className="grid grid-cols-2 gap-4">
-           <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">价位</label>
-              <select name="priceLevel" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
-                <option value="1">¥ (便宜)</option>
-                <option value="2">¥¥ (适中)</option>
-                <option value="3">¥¥¥ (较贵)</option>
-                <option value="4">¥¥¥¥ (奢侈)</option>
-              </select>
-           </div>
-           <div>
+         <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">主要分类</label>
               <select name="category" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-           </div>
          </div>
 
          <Button type="submit" fullWidth size="lg">保存</Button>
