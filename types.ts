@@ -1,22 +1,23 @@
+
 export enum PriceLevel {
-  CHEAP = 1,   // ¥ (< 20)
-  MODERATE = 2, // ¥¥ (20 - 60)
-  EXPENSIVE = 3, // ¥¥¥ (60 - 150)
-  LUXURY = 4    // ¥¥¥¥ (> 150)
+  CHEAP = "CHEAP",       // < 20
+  MODERATE = "MODERATE", // 20 - 60
+  EXPENSIVE = "EXPENSIVE" // > 60
 }
 
 export type CampusLocation = '校内' | '校外';
 
 export interface FoodItem {
   id: string;
-  imageNo: number; // For mapping to food_[No].jpg
+  imageNo: number; 
   name: string;
   location: string;
-  campusLocation: CampusLocation; // New field for precise filtering
-  specificPrice?: string; // New field for display text (e.g. "¥15")
+  campusLocation: CampusLocation;
+  canteen?: string; // New field for specific canteen filtering (only for CampusLocation.ON_CAMPUS)
+  specificPrice?: string; 
   priceLevel: PriceLevel;
-  tags: string[]; // e.g., "Noodles", "Spicy", "Quick"
-  rating: number; // Keep for sorting internally if needed, but won't display
+  tags: string[]; 
+  rating: number; 
   postDate: string; 
   originalPost?: string; 
   originalUrl?: string; 
@@ -24,12 +25,30 @@ export interface FoodItem {
 }
 
 export interface FilterState {
-  locations: CampusLocation[]; // Support multi-select location
-  tags: string[];
+  locations: CampusLocation[];
+  canteens: string[]; // New: Filter for specific canteens
+  priceLevels: PriceLevel[];
+  onlyTakeout: boolean; 
+  categories: string[]; 
+  scenes: string[]; 
 }
 
-export const CATEGORIES = [
-  "快餐", "火锅", "日料", "烧烤", "面食", "西餐", "家常菜", "甜点", "奶茶", "食堂", "外卖", "小吃"
+// Group 1: Cuisine Categories (菜系/食物类别)
+export const CUISINE_CATEGORIES = [
+  "快餐", "面食", "米饭", "火锅", "烧烤", "日料", "西餐", "家常菜", 
+  "轻食", "甜点", "奶茶", "小吃", "川菜", "韩式", "东南亚菜", 
+  "潮汕菜", "西北菜", "鲁菜", "海鲜", "咖啡"
+];
+
+// Group 2: Scene & Flavor & Mode (场景/口味/形式)
+// Removed '食堂' as it is now a location attribute. Added '减脂'.
+export const SCENE_TAGS = [
+  "一人食", "聚餐", "速食", "清淡", "辣", "清真", "养生", 
+  "早餐", "夜宵", "外卖", "便宜", "约会", "减脂"
 ];
 
 export const LOCATIONS: CampusLocation[] = ["校内", "校外"];
+
+export const CANTEEN_OPTIONS = [
+  "一餐", "二餐", "三餐", "四餐", "五餐", "六餐", "七餐", "玉兰苑", "其他"
+];

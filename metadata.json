@@ -1,5 +1,5 @@
 {
-  "name": "今天吃什么 (Daily Eats)",
+  "name": "Daily Eats",
   "description": "交大美食随机选择器，汇集小红书精选推文，由阿里云 Qwen-Plus 提供智能推荐。",
   "requestFramePermissions": []
 }
